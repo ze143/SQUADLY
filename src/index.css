@@ -1,0 +1,213 @@
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    direction: rtl;
+  }
+
+  body {
+    font-family:
+      "Cairo",
+      system-ui,
+      -apple-system,
+      sans-serif;
+    @apply bg-slate-50 text-slate-800 antialiased transition-colors duration-200;
+  }
+
+  .dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
+
+  * {
+    @apply box-border;
+  }
+}
+
+@layer utilities {
+  .app-bg {
+    @apply bg-slate-50 dark:bg-slate-950 transition-colors;
+  }
+
+  .app-card {
+    @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ========================================
+   Dark Mode Overrides
+   بنستخدم CSS عادي بدل @apply
+   عشان Tailwind مايشتكيش
+   ======================================== */
+
+/* النصوص */
+.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+.dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+.dark .text-slate-400 {
+  color: #64748b !important;
+}
+.dark .text-black {
+  color: #ffffff !important;
+}
+
+/* الخلفيات */
+.dark .bg-white {
+  background-color: #0f172a !important;
+}
+.dark .bg-slate-50 {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+.dark .bg-slate-200 {
+  background-color: #334155 !important;
+}
+
+/* الحدود */
+.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+.dark .border-slate-200 {
+  border-color: #1e293b !important;
+}
+.dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+/* Hover States */
+.dark .hover\:bg-slate-50:hover {
+  background-color: #1e293b !important;
+}
+.dark .hover\:bg-slate-100:hover {
+  background-color: #334155 !important;
+}
+.dark .hover\:bg-white:hover {
+  background-color: #0f172a !important;
+}
+
+/* Badges - خلفيات ملونة */
+.dark .bg-emerald-100 {
+  background-color: rgba(6, 78, 59, 0.5) !important;
+}
+.dark .bg-blue-100 {
+  background-color: rgba(30, 58, 138, 0.5) !important;
+}
+.dark .bg-amber-100 {
+  background-color: rgba(120, 53, 15, 0.5) !important;
+}
+.dark .bg-red-100 {
+  background-color: rgba(127, 29, 29, 0.5) !important;
+}
+.dark .bg-purple-100 {
+  background-color: rgba(76, 29, 149, 0.5) !important;
+}
+.dark .bg-indigo-100 {
+  background-color: rgba(49, 46, 129, 0.5) !important;
+}
+
+/* Badge Texts - نصوص ملونة */
+.dark .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+.dark .text-blue-700 {
+  color: #93c5fd !important;
+}
+.dark .text-amber-700 {
+  color: #fcd34d !important;
+}
+.dark .text-red-700 {
+  color: #fca5a5 !important;
+}
+.dark .text-purple-700 {
+  color: #d8b4fe !important;
+}
+.dark .text-indigo-700 {
+  color: #a5b4fc !important;
+}
+.dark .text-emerald-600 {
+  color: #34d399 !important;
+}
+.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+.dark .text-amber-600 {
+  color: #fbbf24 !important;
+}
+.dark .text-red-600 {
+  color: #f87171 !important;
+}
+.dark .text-purple-600 {
+  color: #c084fc !important;
+}
+
+/* Inputs */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Recharts */
+.dark .recharts-cartesian-grid line {
+  stroke: #334155 !important;
+}
+
+.dark .recharts-text {
+  fill: #94a3b8 !important;
+}
+
+/* Modals */
+.dark .bg-slate-900\/50 {
+  background-color: rgba(2, 6, 23, 0.7) !important;
+}
