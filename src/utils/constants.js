@@ -130,3 +130,181 @@ export const getSuspensionStatusLabel = (value) =>
 // ====== قواعد الإنذارات ======
 export const YELLOW_THRESHOLD = 3;        // عدد الإنذارات للإيقاف
 export const RED_DEFAULT_SUSPENSION = 2;  // إيقاف افتراضي للطرد
+
+// ====== نوع الملعب (داخل/خارج) ======
+export const VENUE_TYPES = [
+  { value: 'home', label: 'داخل الأرض (Home)' },
+  { value: 'away', label: 'خارج الأرض (Away)' },
+];
+
+export const getVenueTypeLabel = (value) => {
+  if (value === 'home') return 'داخل';
+  if (value === 'away') return 'خارج';
+  return '-';
+};
+
+export const getVenueTypeColor = (value) => {
+  if (value === 'home') return 'emerald';
+  if (value === 'away') return 'red';
+  return 'slate';
+};
+
+// ====== أنواع التدريبات ======
+export const TRAINING_TYPES = [
+  { value: 'fitness', label: 'لياقة بدنية' },
+  { value: 'tactical', label: 'تكتيك' },
+  { value: 'technical', label: 'مهارات' },
+  { value: 'friendly', label: 'مباراة تجريبية' },
+  { value: 'recovery', label: 'استشفاء' },
+  { value: 'other', label: 'أخرى' },
+];
+
+export const getTrainingTypeLabel = (value) =>
+  TRAINING_TYPES.find((t) => t.value === value)?.label || value;
+
+// ====== حالات التدريب ======
+export const TRAINING_STATUS = [
+  { value: 'scheduled', label: 'مجدول' },
+  { value: 'completed', label: 'مكتمل' },
+  { value: 'cancelled', label: 'ملغى' },
+];
+
+export const getTrainingStatusLabel = (value) =>
+  TRAINING_STATUS.find((s) => s.value === value)?.label || value;
+
+// ====== حالات الحضور ======
+export const ATTENDANCE_STATUS = [
+  { value: 'present', label: 'حاضر', color: 'emerald', emoji: '✅' },
+  { value: 'absent', label: 'غايب', color: 'red', emoji: '❌' },
+  { value: 'late', label: 'متأخر', color: 'amber', emoji: '⏰' },
+  { value: 'excused', label: 'إذن', color: 'blue', emoji: '📝' },
+  { value: 'injured', label: 'مصاب', color: 'purple', emoji: '🏥' },
+];
+
+export const getAttendanceLabel = (value) =>
+  ATTENDANCE_STATUS.find((s) => s.value === value)?.label || value;
+
+export const getAttendanceColor = (value) =>
+  ATTENDANCE_STATUS.find((s) => s.value === value)?.color || 'slate';
+
+export const getAttendanceEmoji = (value) =>
+  ATTENDANCE_STATUS.find((s) => s.value === value)?.emoji || '•';
+
+// ====== أنواع الأحداث ======
+export const EVENT_CATEGORIES = [
+  { value: 'training', label: 'تدريب', icon: '💪', color: 'blue' },
+  { value: 'meeting', label: 'اجتماع', icon: '👥', color: 'purple' },
+  { value: 'friendly', label: 'مباراة تجريبية', icon: '⚽', color: 'emerald' },
+  { value: 'other', label: 'أخرى', icon: '📌', color: 'slate' },
+];
+
+export const getEventCategoryLabel = (value) =>
+  EVENT_CATEGORIES.find((c) => c.value === value)?.label || value;
+
+export const getEventCategoryIcon = (value) =>
+  EVENT_CATEGORIES.find((c) => c.value === value)?.icon || '📌';
+
+export const getEventCategoryColor = (value) =>
+  EVENT_CATEGORIES.find((c) => c.value === value)?.color || 'slate';
+
+// ====== أنواع الاجتماعات ======
+export const MEETING_TYPES = [
+  { value: 'administrative', label: 'إداري' },
+  { value: 'technical', label: 'فني' },
+  { value: 'urgent', label: 'طارئ' },
+  { value: 'regular', label: 'دوري' },
+  { value: 'board', label: 'مجلس إدارة' },
+];
+
+export const getMeetingTypeLabel = (value) =>
+  MEETING_TYPES.find((t) => t.value === value)?.label || value;
+
+// ====== المدعوون ======
+export const ATTENDEES_TYPES = [
+  { value: 'team', label: 'فريق كامل' },
+  { value: 'players', label: 'لاعبون فقط' },
+  { value: 'admins', label: 'إداريون فقط' },
+  { value: 'all', label: 'الكل' },
+];
+
+export const getAttendeesTypeLabel = (value) =>
+  ATTENDEES_TYPES.find((t) => t.value === value)?.label || value;
+
+// ====== حالات الأحداث ======
+export const EVENT_STATUS = [
+  { value: 'scheduled', label: 'مجدول' },
+  { value: 'completed', label: 'مكتمل' },
+  { value: 'cancelled', label: 'ملغى' },
+];
+
+export const getEventStatusLabel = (value) =>
+  EVENT_STATUS.find((s) => s.value === value)?.label || value;
+
+// ====== أنواع الإصابات ======
+export const INJURY_TYPES = [
+  { value: 'muscle', label: 'عضلية', icon: '💪' },
+  { value: 'ligament', label: 'رباط', icon: '🦵' },
+  { value: 'fracture', label: 'كسر', icon: '🦴' },
+  { value: 'bruise', label: 'كدمة', icon: '🟣' },
+  { value: 'head', label: 'رأس', icon: '🧠' },
+  { value: 'other', label: 'أخرى', icon: '🏥' },
+];
+
+export const getInjuryTypeLabel = (value) =>
+  INJURY_TYPES.find((t) => t.value === value)?.label || value;
+
+export const getInjuryTypeIcon = (value) =>
+  INJURY_TYPES.find((t) => t.value === value)?.icon || '🏥';
+
+// ====== شدة الإصابة ======
+export const INJURY_SEVERITY = [
+  { value: 'minor', label: 'خفيفة', color: 'amber' },
+  { value: 'moderate', label: 'متوسطة', color: 'orange' },
+  { value: 'severe', label: 'شديدة', color: 'red' },
+];
+
+export const getInjurySeverityLabel = (value) =>
+  INJURY_SEVERITY.find((s) => s.value === value)?.label || value;
+
+export const getInjurySeverityColor = (value) =>
+  INJURY_SEVERITY.find((s) => s.value === value)?.color || 'slate';
+
+// ====== أجزاء الجسم ======
+export const BODY_PARTS = [
+  { value: 'knee', label: 'الركبة' },
+  { value: 'ankle', label: 'الكاحل' },
+  { value: 'thigh', label: 'الفخذ' },
+  { value: 'calf', label: 'السمانة' },
+  { value: 'shoulder', label: 'الكتف' },
+  { value: 'arm', label: 'الذراع' },
+  { value: 'head', label: 'الرأس' },
+  { value: 'back', label: 'الظهر' },
+  { value: 'other', label: 'أخرى' },
+];
+
+export const getBodyPartLabel = (value) =>
+  BODY_PARTS.find((b) => b.value === value)?.label || value;
+
+// ====== أسباب الإصابة ======
+export const INJURY_CAUSES = [
+  { value: 'training', label: 'تدريب' },
+  { value: 'match', label: 'مباراة' },
+  { value: 'outside', label: 'خارج الملعب' },
+  { value: 'other', label: 'أخرى' },
+];
+
+export const getInjuryCauseLabel = (value) =>
+  INJURY_CAUSES.find((c) => c.value === value)?.label || value;
+
+// ====== حالات الإصابة ======
+export const INJURY_STATUS = [
+  { value: 'active', label: 'نشطة', color: 'red' },
+  { value: 'recovered', label: 'متعافي', color: 'emerald' },
+  { value: 'worsened', label: 'متفاقمة', color: 'purple' },
+];
+
+export const getInjuryStatusLabel = (value) =>
+  INJURY_STATUS.find((s) => s.value === value)?.label || value;
+
+export const getInjuryStatusColor = (value) =>
+  INJURY_STATUS.find((s) => s.value === value)?.color || 'slate';

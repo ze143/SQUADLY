@@ -22,9 +22,13 @@ export default function ReportTable({
     <Card padding="p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <h3 className="font-bold text-slate-800 text-lg">{title}</h3>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">
+            {title}
+          </h3>
           {subtitle && (
-            <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              {subtitle}
+            </p>
           )}
         </div>
         <div className="flex gap-2 shrink-0">
@@ -44,12 +48,14 @@ export default function ReportTable({
       ) : (
         <div className="overflow-x-auto -mx-5">
           <table className="w-full text-right">
-            <thead className="bg-slate-50 text-slate-600 text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 text-sm">
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col.key}
-                    className={`p-3 font-medium whitespace-nowrap ${col.className || ''}`}
+                    className={`p-3 font-medium whitespace-nowrap ${
+                      col.className || ''
+                    }`}
                   >
                     {col.label}
                   </th>
@@ -60,12 +66,12 @@ export default function ReportTable({
               {data.map((row, idx) => (
                 <tr
                   key={row.id || idx}
-                  className="border-t border-slate-100 hover:bg-slate-50"
+                  className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`p-3 text-sm text-slate-700 ${
+                      className={`p-3 text-sm text-slate-700 dark:text-slate-200 ${
                         col.className || ''
                       }`}
                     >

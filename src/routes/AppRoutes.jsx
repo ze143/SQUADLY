@@ -17,6 +17,13 @@ import Users from "../pages/Users";
 import NotFound from "../pages/NotFound";
 import AdminReports from "../pages/AdminReports";
 import Sectors from "../pages/Sectors";
+import Notifications from "../pages/Notifications";
+import Search from "../pages/Search";
+import Calendar from "../pages/Calendar";
+import ComparePlayers from "../pages/ComparePlayers";
+import Training from "../pages/Training";
+import Meetings from "../pages/Meetings";
+import Injuries from "../pages/Injuries";
 
 export default function AppRoutes() {
   return (
@@ -43,6 +50,27 @@ export default function AppRoutes() {
         <Route path="finance" element={<Finance />} />
         <Route path="reports" element={<Reports />} />
         <Route path="escalations" element={<Escalations />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="calendar" element={<Calendar />} />
+        <Route path="training" element={<Training />} />
+        <Route path="meetings" element={<Meetings />} />
+        <Route path="injuries" element={<Injuries />} />
+        <Route
+          path="compare"
+          element={
+            <ProtectedRoute requireAdmin>
+              <ComparePlayers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="search"
+          element={
+            <ProtectedRoute requireAdmin>
+              <Search />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="settings/sectors"
           element={

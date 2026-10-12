@@ -20,12 +20,12 @@ export default function MatchLineup({
     setStarters(
       initialLineup
         .filter((l) => l.lineup_type === "starter")
-        .map((l) => l.player_id)
+        .map((l) => l.player_id),
     );
     setSubstitutes(
       initialLineup
         .filter((l) => l.lineup_type === "substitute")
-        .map((l) => l.player_id)
+        .map((l) => l.player_id),
     );
   }, [initialLineup]);
 
@@ -121,10 +121,10 @@ export default function MatchLineup({
                     isStarter
                       ? "bg-emerald-50 border border-emerald-300"
                       : isSuspended
-                      ? "bg-red-50 border border-red-200"
-                      : isInactive
-                      ? "bg-slate-100 border border-slate-300"
-                      : "hover:bg-slate-50 border border-transparent",
+                        ? "bg-red-50 border border-red-200"
+                        : isInactive
+                          ? "bg-slate-100 border border-slate-300"
+                          : "hover:bg-slate-50 border border-transparent",
                     isDisabled
                       ? "opacity-60 cursor-not-allowed"
                       : "cursor-pointer",
@@ -144,13 +144,18 @@ export default function MatchLineup({
                       </span>
                     )}
                     {isSuspended && (
-                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                      <span className="text-s bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                         🚫 موقوف
                       </span>
                     )}
                     {isInactive && (
                       <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">
                         ⏸️ غير نشط
+                      </span>
+                    )}
+                    {p._injured && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">
+                        🏥 مصاب
                       </span>
                     )}
                   </span>
@@ -182,10 +187,7 @@ export default function MatchLineup({
               const isSuspended = p._suspended;
               const isInactive = p._inactive;
               const isDisabled =
-                disabled ||
-                (isStarter && !isSub) ||
-                isSuspended ||
-                isInactive;
+                disabled || (isStarter && !isSub) || isSuspended || isInactive;
 
               return (
                 <button
@@ -198,10 +200,10 @@ export default function MatchLineup({
                     isSub
                       ? "bg-amber-50 border border-amber-300"
                       : isSuspended
-                      ? "bg-red-50 border border-red-200"
-                      : isInactive
-                      ? "bg-slate-100 border border-slate-300"
-                      : "hover:bg-slate-50 border border-transparent",
+                        ? "bg-red-50 border border-red-200"
+                        : isInactive
+                          ? "bg-slate-100 border border-slate-300"
+                          : "hover:bg-slate-50 border border-transparent",
                     isDisabled
                       ? "opacity-60 cursor-not-allowed"
                       : "cursor-pointer",
@@ -221,7 +223,7 @@ export default function MatchLineup({
                       </span>
                     )}
                     {isSuspended && (
-                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                      <span className="text-s bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                         🚫 موقوف
                       </span>
                     )}

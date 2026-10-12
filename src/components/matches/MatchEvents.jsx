@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Plus, Trash2, Zap } from "lucide-react";
+import { supabase } from "../../lib/supabase";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import Select from "../ui/Select";
 import Input from "../ui/Input";
 import EmptyState from "../ui/EmptyState";
-import { supabase } from '../../lib/supabase';
 
 import {
   EVENT_TYPES,
@@ -27,6 +27,7 @@ export default function MatchEvents({
   onRemove,
   disabled = false,
   matchId,
+  lineup = [],
 }) {
   const [events, setEvents] = useState(initialEvents);
   const [form, setForm] = useState({
@@ -37,6 +38,64 @@ export default function MatchEvents({
     minute: "",
   });
   const [adding, setAdding] = useState(false);
+
+  // ===== اللاعبين اللي في الملعب حالياً =====
+  const getPlayersOnField = () => {
+    // 1) الأساسيين
+    const starterIds = lineup
+      .filter((l) => l.lineup_type === "starter")
+      .map((l) => l.player_id);
+
+    // 2) اللي دخلوا (بدائل)
+    const subInIds = events
+      .filter((e) => e.event_type === "substitution_in")
+      .map((e) => e.player_id);
+
+    // 3) اللي خرجوا
+    const subOutIds = events
+      .filter((e) => e.event_type === "substitution_out")
+      .map((e) => e.player_id);
+
+    // 4) في الملعب = أساسيين - خرجوا + دخلوا
+    const onFieldIds = [
+      ...new Set([
+        ...starterIds.filter((id) => !subOutIds.includes(id)),
+        ...subInIds,
+      ]),
+    ];
+
+    return players.filter((p) => onFieldIds.includes(p.id));
+  };
+
+  // ===== الاحتياطيين اللي لسه ما دخلوش =====
+  const getAvailableSubstitutes = () => {
+    // 1) الاحتياطيين
+    const subIds = lineup
+      .filter((l) => l.lineup_type === "substitute")
+      .map((l) => l.player_id);
+
+    // 2) اللي دخلوا
+    const subInIds = events
+      .filter((e) => e.event_type === "substitution_in")
+      .map((e) => e.player_id);
+
+    // 3) المتاحين = احتياطيين - دخلوا
+    const availableIds = subIds.filter((id) => !subInIds.includes(id));
+
+    return players.filter((p) => availableIds.includes(p.id));
+  };
+
+  // ===== اللاعبين المناسبين لكل حدث =====
+  const getPlayersForEvent = (eventType) => {
+    if (eventType === "substitution_out") {
+      return getPlayersOnField();
+    }
+    if (eventType === "substitution_in") {
+      return getAvailableSubstitutes();
+    }
+    // أهداف، بطاقات → كل اللاعبين في الملعب
+    return getPlayersOnField();
+  };
 
   const handleAdd = async () => {
     if (!form.player_id || !form.minute || !form.half) {
@@ -120,16 +179,21 @@ export default function MatchEvents({
   const getHalfLabel = (half) =>
     HALF_OPTIONS.find((h) => Number(h.value) === Number(half))?.label || "-";
 
+  // ===== اللاعبين المناسبين للحدث الحالي =====
+  const availablePlayers = getPlayersForEvent(form.event_type);
+
   return (
     <Card padding="p-5">
       <div className="flex items-center gap-2 mb-4">
         <Zap size={18} className="text-emerald-600" />
-        <h3 className="font-bold text-slate-800">أحداث المباراة</h3>
+        <h3 className="font-bold text-slate-800 dark:text-slate-100">
+          أحداث المباراة
+        </h3>
       </div>
 
       {/* ====== نموذج الإضافة ====== */}
       {!disabled && (
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-5 p-4 bg-slate-50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-5 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
           <Select
             options={EVENT_TYPES.map((e) => ({
               value: e.value,
@@ -137,17 +201,30 @@ export default function MatchEvents({
             }))}
             placeholder=""
             value={form.event_type}
-            onChange={(e) => setForm({ ...form, event_type: e.target.value })}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                event_type: e.target.value,
+                player_id: "",
+                assist_player_id: "",
+              })
+            }
           />
           <Select
-            options={players.map((p) => ({ value: p.id, label: p.full_name }))}
-            placeholder="-- اللاعب --"
+            options={availablePlayers.map((p) => ({
+              value: p.id,
+              label: p.full_name,
+            }))}
+            placeholder={
+              availablePlayers.length === 0 ? "لا يوجد لاعبون" : "-- اللاعب --"
+            }
             value={form.player_id}
             onChange={(e) => setForm({ ...form, player_id: e.target.value })}
+            disabled={availablePlayers.length === 0}
           />
           {form.event_type === "goal" ? (
             <Select
-              options={players
+              options={getPlayersOnField()
                 .filter((p) => p.id !== form.player_id)
                 .map((p) => ({ value: p.id, label: p.full_name }))}
               placeholder="-- صانع الهدف --"
@@ -195,17 +272,17 @@ export default function MatchEvents({
             return (
               <div
                 key={ev.id}
-                className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg"
+                className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-2xl shrink-0">
                     {getEventIcon(ev.event_type)}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
                       {player?.full_name || "لاعب محذوف"}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {getEventLabel(ev.event_type)}
                       {assist && ` • صناعة: ${assist.full_name}`}
                     </p>
@@ -214,17 +291,17 @@ export default function MatchEvents({
 
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-left">
-                    <p className="text-sm font-bold text-emerald-600">
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                       {ev.minute}'
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {getHalfLabel(ev.half)}
                     </p>
                   </div>
                   {!disabled && (
                     <button
                       onClick={() => handleRemove(ev.id)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                       title="حذف"
                     >
                       <Trash2 size={14} />

@@ -27,11 +27,15 @@ import MatchReferees from "../components/matches/MatchReferees";
 import MatchReport from "../components/matches/MatchReport";
 import MatchRatings from "../components/matches/MatchRatings";
 import { formatDateTime } from "../utils/formatters";
+import { getVenueTypeLabel, getVenueTypeColor } from "../utils/constants";
+import MatchPenalties from "../components/matches/MatchPenalties";
+import { Target } from "lucide-react";
 
 const TABS = [
   { id: "info", label: "معلومات المباراة", icon: Trophy },
   { id: "lineup", label: "التشكيل", icon: Users },
   { id: "events", label: "الأحداث", icon: Flag },
+  { id: "penalties", label: "ركلات الترجيح", icon: Target },
   { id: "ratings", label: "التقييمات", icon: Star },
   { id: "referees", label: "الحكام", icon: Users },
   { id: "report", label: "التقرير", icon: Save },
@@ -44,6 +48,7 @@ export default function MatchDetails() {
   const admin = isAdmin(profile);
   const teamAdmin = isTeamAdmin(profile);
   const [suspendedPlayers, setSuspendedPlayers] = useState([]);
+  const [injuredPlayers, setInjuredPlayers] = useState([]);
 
   const { getMatchDetails, saveLineup, addEvent, removeEvent, saveReferees } =
     useMatches();
@@ -78,6 +83,11 @@ export default function MatchDetails() {
         (data.activeSuspensions || []).map((s) => s.player_id),
       );
       setSuspendedPlayers(Array.from(suspendedIds));
+
+      const injuredIds = new Set(
+        (data.activeInjuries || []).map((i) => i.player_id),
+      );
+      setInjuredPlayers(Array.from(injuredIds));
 
       // ✅ جلب التقييمات
       const { data: ratingsData } = await supabase
@@ -121,6 +131,7 @@ export default function MatchDetails() {
           ...p,
           _suspended: suspendedIds.has(p.id),
           _inactive: p.is_active === false,
+          _injured: injuredIds.has(p.id),
         }));
         setPlayers(playersWithStatus);
       }
@@ -253,24 +264,38 @@ export default function MatchDetails() {
 
   // ✅ استخراج المشاركين (الأساسيين + الاحتياطيين اللي دخلوا)
   const getParticipants = () => {
-    // الأساسيين
+    // 1) الأساسيين
     const starterIds = lineup
       .filter((l) => l.lineup_type === "starter")
       .map((l) => l.player_id);
 
-    // الاحتياطيين اللي دخلوا (من الأحداث)
+    // 2) اللي دخلوا
     const subInIds = events
       .filter((e) => e.event_type === "substitution_in")
       .map((e) => e.player_id);
 
+    // 3) اللي خرجوا
+    const subOutIds = events
+      .filter((e) => e.event_type === "substitution_out")
+      .map((e) => e.player_id);
+
+    // 4) المشاركون (أساسيين + اللي دخلوا)
     const allIds = [...new Set([...starterIds, ...subInIds])];
 
     return players
       .filter((p) => allIds.includes(p.id))
-      .map((p) => ({
-        ...p,
-        lineup_type: starterIds.includes(p.id) ? "starter" : "substitute",
-      }));
+      .map((p) => {
+        const isStarter = starterIds.includes(p.id);
+        const isSubbedOut = subOutIds.includes(p.id);
+        const isSubbedIn = subInIds.includes(p.id);
+
+        return {
+          ...p,
+          lineup_type: isStarter ? "starter" : "substitute",
+          _subbedOut: isSubbedOut,
+          _subbedIn: isSubbedIn,
+        };
+      });
   };
 
   if (loading) {
@@ -341,8 +366,14 @@ export default function MatchDetails() {
             <p className="font-bold text-slate-800 text-lg">{match.opponent}</p>
           </div>
         </div>
-        <div className="flex flex-wrap justify-center gap-4 mt-4 text-xs text-slate-500">
+
+        <div className="flex flex-wrap justify-center gap-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
           <MatchStatusBadge status={match.status} />
+          {match.venue_type && (
+            <Badge color={getVenueTypeColor(match.venue_type)} size="sm">
+              {getVenueTypeLabel(match.venue_type)}
+            </Badge>
+          )}
           <span className="flex items-center gap-1">
             <Calendar size={12} /> {formatDateTime(match.match_date)}
           </span>
@@ -363,9 +394,16 @@ export default function MatchDetails() {
       )}
 
       {suspendedPlayers.length > 0 && (
-        <div className="bg-red-50 border border-red-200 text-red-800 text-sm p-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-800 text-s p-3 rounded-lg">
           🚫 يوجد <strong>{suspendedPlayers.length}</strong> لاعب موقوف. لا يمكن
           إضافتهم للتشكيل حتى يتم رفع الإيقاف.
+        </div>
+      )}
+
+      {injuredPlayers.length > 0 && (
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/40 text-orange-800 dark:text-orange-300 text-sm p-3 rounded-lg">
+          🏥 يوجد <strong>{injuredPlayers.length}</strong> لاعب مصاب. يفضل عدم
+          إضافتهم للتشكيل حتى يتعافوا.
         </div>
       )}
 
@@ -448,6 +486,7 @@ export default function MatchDetails() {
           onRemove={handleRemoveEvent}
           disabled={!canEdit}
           matchId={id}
+          lineup={lineup}
         />
       )}
 
@@ -461,6 +500,16 @@ export default function MatchDetails() {
         />
       )}
 
+      {tab === "penalties" && (
+        <MatchPenalties
+          match={match}
+          players={players}
+          lineup={lineup}
+          events={events}
+          disabled={!canEdit}
+          onRefresh={loadAll}
+        />
+      )}
       {/* Referees Tab */}
       {tab === "referees" && (
         <MatchReferees
