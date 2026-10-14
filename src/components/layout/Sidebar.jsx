@@ -1,9 +1,29 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Shield, Calendar, CalendarDays,
-  DollarSign, BarChart3, ArrowUpCircle, UserCog, LogOut, Trophy,
-  X, Layers, Bell, Search as SearchIcon, ArrowLeftRight, Dumbbell,
-  MessageSquare, HeartPulse, Home, Activity, Wallet, Settings,
+  LayoutDashboard,
+  Users,
+  Shield,
+  Calendar,
+  CalendarDays,
+  DollarSign,
+  BarChart3,
+  ArrowUpCircle,
+  UserCog,
+  LogOut,
+  Trophy,
+  X,
+  Layers,
+  Bell,
+  Search as SearchIcon,
+  ArrowLeftRight,
+  Dumbbell,
+  MessageSquare,
+  HeartPulse,
+  Home,
+  Activity,
+  Wallet,
+  Settings,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { isAdmin as checkIsAdmin } from "../../utils/permissions";
@@ -13,8 +33,8 @@ import SectorSwitcher from "./SectorSwitcher";
 // ===== الأقسام =====
 const SECTIONS = [
   {
-    id: 'main',
-    label: 'الرئيسية',
+    id: "main",
+    label: "الرئيسية",
     icon: Home,
     items: [
       { to: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
@@ -23,8 +43,8 @@ const SECTIONS = [
     adminOnly: false,
   },
   {
-    id: 'activities',
-    label: 'الأنشطة',
+    id: "activities",
+    label: "الأنشطة",
     icon: Activity,
     items: [
       { to: "/training", label: "التدريبات", icon: Dumbbell },
@@ -35,8 +55,8 @@ const SECTIONS = [
     adminOnly: false,
   },
   {
-    id: 'management',
-    label: 'الإدارة',
+    id: "management",
+    label: "الإدارة",
     icon: Users,
     items: [
       { to: "/players", label: "اللاعبون", icon: Users },
@@ -46,8 +66,8 @@ const SECTIONS = [
     adminOnly: false,
   },
   {
-    id: 'finance',
-    label: 'المالية والتقارير',
+    id: "finance",
+    label: "المالية والتقارير",
     icon: Wallet,
     items: [
       { to: "/finance", label: "المالية", icon: DollarSign },
@@ -56,8 +76,20 @@ const SECTIONS = [
     adminOnly: false,
   },
   {
-    id: 'admin',
-    label: 'إدارة النظام',
+    id: "treasury",
+    label: "الخزينة والعقود",
+    icon: Wallet,
+    items: [
+      { to: "/treasury", label: "الخزينة", icon: Wallet },
+      { to: "/treasury/reports", label: "تقارير الخزينة", icon: BarChart3 },
+      { to: "/contracts", label: "العقود", icon: FileText },
+      { to: "/contracts/reports", label: "تقارير العقود", icon: BarChart3 },
+    ],
+    adminOnly: true, // 
+  },
+  {
+    id: "admin",
+    label: "إدارة النظام",
     icon: Settings,
     items: [
       { to: "/search", label: "البحث المتقدم", icon: SearchIcon },
@@ -81,9 +113,7 @@ export default function Sidebar({ onClose, isMobile = false }) {
   };
 
   // الفلترة حسب الصلاحيات
-  const visibleSections = SECTIONS.filter(
-    (s) => !s.adminOnly || admin
-  );
+  const visibleSections = SECTIONS.filter((s) => !s.adminOnly || admin);
 
   return (
     <aside
@@ -142,6 +172,7 @@ export default function Sidebar({ onClose, isMobile = false }) {
                   <NavLink
                     key={to}
                     to={to}
+                    end
                     onClick={isMobile ? onClose : undefined}
                     className={({ isActive }) =>
                       [

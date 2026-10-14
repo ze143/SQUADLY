@@ -24,6 +24,11 @@ import ComparePlayers from "../pages/ComparePlayers";
 import Training from "../pages/Training";
 import Meetings from "../pages/Meetings";
 import Injuries from "../pages/Injuries";
+import Treasury from "../pages/Treasury";
+import TreasuryReports from "../pages/TreasuryReports";
+import Contracts from "../pages/Contracts";
+import ContractDetails from "../pages/ContractDetails";
+import ContractsReports from "../pages/ContractsReports";
 
 export default function AppRoutes() {
   return (
@@ -55,6 +60,22 @@ export default function AppRoutes() {
         <Route path="training" element={<Training />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="injuries" element={<Injuries />} />
+        <Route
+          path="/treasury"
+          element={
+            <ProtectedRoute requireAdmin>
+              <Treasury />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/treasury/reports"
+          element={
+            <ProtectedRoute requireAdmin>
+              <TreasuryReports />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="compare"
           element={
@@ -96,6 +117,9 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route path="contracts" element={<Contracts />} />
+        <Route path="contracts/:id" element={<ContractDetails />} />
+        <Route path="contracts/reports" element={<ContractsReports />} />
       </Route>
 
       {/* صفحة 404 */}
