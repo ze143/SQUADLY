@@ -29,6 +29,9 @@ import TreasuryReports from "../pages/TreasuryReports";
 import Contracts from "../pages/Contracts";
 import ContractDetails from "../pages/ContractDetails";
 import ContractsReports from "../pages/ContractsReports";
+import Assessments from "../pages/Assessments";
+import AssessmentDetails from "../pages/AssessmentDetails";
+import AssessmentReports from "../pages/AssessmentReports";
 
 export default function AppRoutes() {
   return (
@@ -60,8 +63,10 @@ export default function AppRoutes() {
         <Route path="training" element={<Training />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="injuries" element={<Injuries />} />
+
+        {/* ===== Treasury (Admin Only) ===== */}
         <Route
-          path="/treasury"
+          path="treasury"
           element={
             <ProtectedRoute requireAdmin>
               <Treasury />
@@ -69,13 +74,54 @@ export default function AppRoutes() {
           }
         />
         <Route
-          path="/treasury/reports"
+          path="treasury/reports"
           element={
             <ProtectedRoute requireAdmin>
               <TreasuryReports />
             </ProtectedRoute>
           }
         />
+
+        {/* ===== Contracts (Admin Only) ===== */}
+        <Route
+          path="contracts"
+          element={
+            <ProtectedRoute requireAdmin>
+              <Contracts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="contracts/reports"
+          element={
+            <ProtectedRoute requireAdmin>
+              <ContractsReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="contracts/:id"
+          element={
+            <ProtectedRoute requireAdmin>
+              <ContractDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ===== Assessments ===== */}
+        {/* reports قبل :id */}
+        <Route
+          path="assessments/reports"
+          element={
+            <ProtectedRoute requireAdmin>
+              <AssessmentReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="assessments" element={<Assessments />} />
+        <Route path="assessments/:id" element={<AssessmentDetails />} />
+
+        {/* ===== Admin Routes ===== */}
         <Route
           path="compare"
           element={
@@ -100,7 +146,6 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* Admin Routes */}
         <Route
           path="users"
           element={
@@ -117,9 +162,6 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="contracts" element={<Contracts />} />
-        <Route path="contracts/:id" element={<ContractDetails />} />
-        <Route path="contracts/reports" element={<ContractsReports />} />
       </Route>
 
       {/* صفحة 404 */}

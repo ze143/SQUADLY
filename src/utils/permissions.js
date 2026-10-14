@@ -1,10 +1,12 @@
-import { ROLES } from './constants';
+import { ROLES } from "./constants";
 
 // ====== هل المستخدم مدير نظام؟ ======
 export const isAdmin = (profile) => profile?.role === ROLES.ADMIN;
 
 // ====== هل المستخدم إداري فريق؟ ======
-export const isTeamAdmin = (profile) => profile?.role === ROLES.TEAM_ADMIN;
+export const isTeamAdmin = (profile) => {
+  return profile?.role === "team_admin";
+};
 
 // ====== هل يمتلك صلاحية إدارة فريق معين؟ ======
 export const canManageTeam = (profile, teamId) => {
@@ -25,7 +27,8 @@ export const getAllowedTeamIds = (profile) => {
 export const canManageUsers = (profile) => isAdmin(profile);
 
 // ====== هل يمكنه الموافقة على التصعيدات؟ ======
-export const canReviewEscalations = (profile) => isAdmin(profile) || isTeamAdmin(profile);
+export const canReviewEscalations = (profile) =>
+  isAdmin(profile) || isTeamAdmin(profile);
 
 // ====== هل يمكنه غلق/فتح تقرير مباراة؟ ======
 export const canCloseMatchReport = (profile) => isAdmin(profile);

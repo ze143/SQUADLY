@@ -21,15 +21,10 @@ export function usePlayers(options = {}) {
     try {
       let query = supabase
         .from("players")
-        .select("*, teams!inner(id, name, category, birth_year, sector_id)")
+        .select("*, teams(id, name, category, birth_year, sector_id)")
         .order("created_at", { ascending: false });
 
-      // ✅ فلترة حسب القطاع
-      if (selectedSectorId) {
-        query = query.eq("teams.sector_id", selectedSectorId);
-      }
-
-      // قيود الصلاحيات
+      // ✅ قيود الصلاحيات
       if (!isAdmin(profile)) {
         const allowed = getAllowedTeamIds(profile) || [];
         if (allowed.length === 0) {
@@ -49,7 +44,14 @@ export function usePlayers(options = {}) {
 
       const { data, error: err } = await query;
       if (err) throw err;
-      setPlayers(data || []);
+
+      // ✅ فلتر القطاع في JS (أضمن من .or() مع relations)
+      let list = data || [];
+      if (selectedSectorId) {
+        list = list.filter((p) => p.teams?.sector_id === selectedSectorId);
+      }
+
+      setPlayers(list);
     } catch (err) {
       console.error("usePlayers:", err);
       setError(err.message);
@@ -63,24 +65,68 @@ export function usePlayers(options = {}) {
   }, [fetchPlayers]);
 
   const createPlayer = async (payload) => {
+    const { installments, ...playerData } = payload;
+
     const { data, error: err } = await supabase
       .from("players")
-      .insert(payload)
+      .insert(playerData)
       .select()
       .single();
     if (err) throw err;
+
+    if (installments && installments.length > 0) {
+      const records = installments.map((inst) => ({
+        player_id: data.id,
+        amount: Number(inst.amount),
+        due_date: inst.due_date,
+        status: inst.status || "unpaid",
+        notes: inst.notes || null,
+        paid_date: inst.paid_date || null,
+      }));
+
+      const { error: instErr } = await supabase
+        .from("installments")
+        .insert(records);
+
+      if (instErr) throw instErr;
+    }
+
     await fetchPlayers();
     return data;
   };
 
   const updatePlayer = async (id, payload) => {
+    const { installments, ...playerData } = payload;
+
     const { data, error: err } = await supabase
       .from("players")
-      .update(payload)
+      .update(playerData)
       .eq("id", id)
       .select()
       .single();
     if (err) throw err;
+
+    if (installments !== undefined) {
+      await supabase.from("installments").delete().eq("player_id", id);
+
+      if (installments.length > 0) {
+        const records = installments.map((inst) => ({
+          player_id: id,
+          amount: Number(inst.amount),
+          due_date: inst.due_date,
+          status: inst.status || "unpaid",
+          notes: inst.notes || null,
+          paid_date: inst.paid_date || null,
+        }));
+
+        const { error: instErr } = await supabase
+          .from("installments")
+          .insert(records);
+
+        if (instErr) throw instErr;
+      }
+    }
+
     await fetchPlayers();
     return data;
   };

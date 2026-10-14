@@ -12,6 +12,11 @@ import {
   FileText,
   Trophy,
   HeartPulse,
+  Wallet,
+  ClipboardList,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -38,8 +43,6 @@ import {
   getSuspensionTypeLabel,
   getEscalationStatusLabel,
   getMatchStatusLabel,
-} from "../utils/constants";
-import {
   getInjuryTypeLabel,
   getInjuryTypeIcon,
   getInjurySeverityLabel,
@@ -49,6 +52,18 @@ import {
   getInjuryStatusLabel,
   getInjuryStatusColor,
 } from "../utils/constants";
+import {
+  getAssessmentStatusLabel,
+  getAssessmentStatusColor,
+  getAdminDecisionLabel,
+  getAdminDecisionColor,
+  getAdminDecisionIcon,
+  getFinalDecisionLabel,
+  getFinalDecisionColor,
+  getFinalDecisionIcon,
+  getPlayerTypeIcon,
+  getPlayerTypeLabel,
+} from "../utils/assessmentConstants";
 import TeamPerformanceChart from "../components/charts/TeamPerformanceChart";
 import GoalsTrendChart from "../components/charts/GoalsTrendChart";
 import PositionsChart from "../components/charts/PositionsChart";
@@ -105,6 +120,27 @@ const REPORTS = [
     color: "red",
   },
   {
+    id: "assessments",
+    title: "الاختبارات",
+    description: "اختبارات وقرارات ومشاركين",
+    icon: ClipboardList,
+    color: "purple",
+  },
+  {
+    id: "treasury",
+    title: "الخزينة",
+    description: "إيرادات ومصروفات ورصيد",
+    icon: Wallet,
+    color: "emerald",
+  },
+  {
+    id: "contracts",
+    title: "العقود",
+    description: "عقود ودفعات والتزامات",
+    icon: FileText,
+    color: "blue",
+  },
+  {
     id: "charts",
     title: "رسوم بيانية",
     description: "مخططات تفاعلية",
@@ -134,6 +170,10 @@ export default function AdminReports() {
     escalations: [],
     events: [],
     injuries: [],
+    treasury: [],
+    contracts: [],
+    assessments: [],
+    assessment_participants: [],
   });
 
   if (!admin) {
@@ -148,7 +188,7 @@ export default function AdminReports() {
     );
   }
 
-  // ===== تحميل الفرق (مفلترة حسب القطاع) =====
+  // ===== تحميل الفرق =====
   useEffect(() => {
     const load = async () => {
       const { data: activeSectorsData } = await supabase
@@ -171,11 +211,10 @@ export default function AdminReports() {
     load();
   }, [selectedSectorId]);
 
-  // ===== تحميل البيانات (كلها مفلترة حسب القطاع) =====
+  // ===== تحميل البيانات =====
   const loadData = async () => {
     setLoading(true);
     try {
-      // ✅ نجيب القطاعات النشطة مرة واحدة
       const { data: activeSectorsData } = await supabase
         .from("sectors")
         .select("id")
@@ -198,7 +237,7 @@ export default function AdminReports() {
       let playersQ = supabase
         .from("players")
         .select(
-          "id, full_name, position, birth_year, team_id, player_type, teams!inner(name, category, sector_id)",
+          "id, full_name, position, birth_year, team_id, player_type, teams(name, category, sector_id)",
         );
 
       if (selectedSectorId) {
@@ -207,7 +246,7 @@ export default function AdminReports() {
         playersQ = playersQ.in("teams.sector_id", activeIds);
       }
 
-      // ===== المباريات (مع بيانات الترجيح) =====
+      // ===== المباريات =====
       let matchesQ = supabase
         .from("matches")
         .select(
@@ -229,9 +268,7 @@ export default function AdminReports() {
       // ===== الأقساط =====
       let instQ = supabase
         .from("installments")
-        .select(
-          "*, players!inner(full_name, team_id, teams!inner(name, sector_id))",
-        );
+        .select("*, players(full_name, team_id, teams(name, sector_id))");
 
       if (selectedSectorId) {
         instQ = instQ.eq("players.teams.sector_id", selectedSectorId);
@@ -242,9 +279,7 @@ export default function AdminReports() {
       // ===== الإيقافات =====
       let suspQ = supabase
         .from("suspensions")
-        .select(
-          "*, players!inner(full_name, team_id, teams!inner(name, sector_id))",
-        );
+        .select("*, players(full_name, team_id, teams(name, sector_id))");
 
       if (selectedSectorId) {
         suspQ = suspQ.eq("players.teams.sector_id", selectedSectorId);
@@ -268,9 +303,7 @@ export default function AdminReports() {
       // ===== الإصابات =====
       let injuriesQ = supabase
         .from("injuries")
-        .select(
-          "*, players!inner(full_name, team_id, teams!inner(name, sector_id))",
-        )
+        .select("*, players(full_name, team_id, teams(name, sector_id))")
         .order("injury_date", { ascending: false });
 
       if (selectedSectorId) {
@@ -279,14 +312,14 @@ export default function AdminReports() {
         injuriesQ = injuriesQ.in("players.teams.sector_id", activeIds);
       }
 
-      // ===== الأحداث (للرسوم البيانية) =====
+      // ===== الأحداث =====
       let eventsQ = supabase
         .from("match_events")
         .select(
           `
           id, event_type, player_id, minute,
           matches(id, opponent, match_date),
-          players!inner(id, full_name, team_id, teams!inner(sector_id))
+          players(id, full_name, team_id, teams(sector_id))
         `,
         )
         .in("event_type", ["goal", "assist"]);
@@ -297,6 +330,35 @@ export default function AdminReports() {
         eventsQ = eventsQ.in("players.teams.sector_id", activeIds);
       }
 
+      // ===== الخزينة =====
+      const treasuryQ = supabase
+        .from("treasury_transactions")
+        .select("*")
+        .order("transaction_date", { ascending: false });
+
+      // ===== العقود =====
+      const contractsQ = supabase
+        .from("contracts")
+        .select(
+          `
+          *,
+          players(id, full_name)
+        `,
+        )
+        .order("created_at", { ascending: false });
+
+      // ✅ الاختبارات
+      const assessmentsQ = supabase
+        .from("assessments")
+        .select(`*, teams(id, name, category, sector_id)`)
+        .order("created_at", { ascending: false });
+
+      // ✅ المشاركين في الاختبارات
+      const participantsQ = supabase
+        .from("assessment_participants")
+        .select("*")
+        .eq("is_primary", true);
+
       const [
         teamsRes,
         playersRes,
@@ -306,6 +368,10 @@ export default function AdminReports() {
         escRes,
         eventsRes,
         injuriesRes,
+        treasuryRes,
+        contractsRes,
+        assessmentsRes,
+        participantsRes,
       ] = await Promise.all([
         teamsQ,
         playersQ,
@@ -315,9 +381,13 @@ export default function AdminReports() {
         escQ,
         eventsQ,
         injuriesQ,
+        treasuryQ,
+        contractsQ,
+        assessmentsQ,
+        participantsQ,
       ]);
 
-      // ===== فلترة التصعيدات (في الكود) =====
+      // ===== فلترة التصعيدات =====
       let escalationsData = escRes.data || [];
       if (selectedSectorId) {
         escalationsData = escalationsData.filter(
@@ -333,7 +403,7 @@ export default function AdminReports() {
         );
       }
 
-      // ===== حساب أداء الفرق (مع دعم ركلات الترجيح) =====
+      // ===== حساب أداء الفرق =====
       const teamsStats = (teamsRes.data || []).map((team) => {
         const teamMatches = (matchesRes.data || []).filter(
           (m) => m.team_id === team.id && m.home_score !== null,
@@ -354,7 +424,6 @@ export default function AdminReports() {
           goalsFor += homeScore;
           goalsAgainst += awayScore;
 
-          // ===== كشف ركلات الترجيح =====
           const homePens = (m.penalty_shots || []).filter(
             (p) => p.team_side === "home" && p.is_scored,
           ).length;
@@ -366,16 +435,15 @@ export default function AdminReports() {
             (m.penalty_shots?.length || 0) > 0 ||
             m.has_penalties === true ||
             m.penalties_locked === true ||
-            (m.penalty_home_score > 0 || m.penalty_away_score > 0);
+            m.penalty_home_score > 0 ||
+            m.penalty_away_score > 0;
 
           const penHome = homePens || m.penalty_home_score || 0;
           const penAway = awayPens || m.penalty_away_score || 0;
 
           const isDrawInRegularTime = homeScore === awayScore;
 
-          // ===== تحديد النتيجة =====
           if (hasPenalties && penHome !== penAway) {
-            // المباراة اتحسمت بالترجيح
             if (penHome > penAway) {
               wins++;
               penaltyWins++;
@@ -384,11 +452,9 @@ export default function AdminReports() {
               penaltyLosses++;
             }
           } else if (!isDrawInRegularTime) {
-            // فوز/خسارة عادية
             if (homeScore > awayScore) wins++;
             else losses++;
           } else {
-            // تعادل حقيقي
             draws++;
           }
         });
@@ -457,7 +523,7 @@ export default function AdminReports() {
             yellows: yellowsRes.count || 0,
             reds: redsRes.count || 0,
             avgRating,
-            team_name: p.teams?.name || "-",
+            team_name: p.teams?.name || "بدون فريق",
           };
         }),
       );
@@ -471,6 +537,10 @@ export default function AdminReports() {
         escalations: escalationsData,
         events: eventsRes.data || [],
         injuries: injuriesRes.data || [],
+        treasury: treasuryRes.data || [],
+        contracts: contractsRes.data || [],
+        assessments: assessmentsRes.data || [],
+        assessment_participants: participantsRes.data || [],
       });
     } catch (err) {
       console.error(err);
@@ -485,7 +555,7 @@ export default function AdminReports() {
     setFilterTeam("");
   }, [selectedSectorId]);
 
-  // ===== فلترة حسب الفريق والتاريخ =====
+  // ===== فلترة =====
   const applyFilters = (arr, teamKey = "team_id", dateKey = "created_at") => {
     let filtered = arr;
     if (filterTeam) {
@@ -568,14 +638,6 @@ export default function AdminReports() {
           value={formatNumber(pendingEscalations)}
           color="indigo"
         />
-        <StatCard
-          icon={HeartPulse}
-          label="إصابات نشطة"
-          value={formatNumber(
-            data.injuries.filter((i) => i.status === "active").length,
-          )}
-          color="red"
-        />
       </div>
 
       {/* Filters */}
@@ -621,7 +683,7 @@ export default function AdminReports() {
       </Card>
 
       {/* Reports Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {REPORTS.map((r) => (
           <button
             key={r.id}
@@ -667,6 +729,20 @@ export default function AdminReports() {
       )}
       {activeReport === "injuries" && (
         <InjuryReport data={applyFilters(data.injuries, null, null)} />
+      )}
+      {activeReport === "assessments" && (
+        <AssessmentsReport
+          data={data.assessments}
+          participants={data.assessment_participants}
+        />
+      )}
+      {activeReport === "treasury" && (
+        <TreasuryReport
+          data={applyFilters(data.treasury, null, "transaction_date")}
+        />
+      )}
+      {activeReport === "contracts" && (
+        <ContractsReport data={data.contracts} />
       )}
 
       {activeReport === "charts" && (
@@ -852,7 +928,6 @@ function MatchReport({ data }) {
       key: "score",
       label: "النتيجة",
       render: (r) => {
-        // كشف الترجيح
         const homePens = (r.penalty_shots || []).filter(
           (p) => p.team_side === "home" && p.is_scored,
         ).length;
@@ -888,7 +963,6 @@ function MatchReport({ data }) {
       render: (r) => {
         if (r.home_score === null) return <Badge color="slate">—</Badge>;
 
-        // ===== كشف الترجيح =====
         const homePens = (r.penalty_shots || []).filter(
           (p) => p.team_side === "home" && p.is_scored,
         ).length;
@@ -904,7 +978,6 @@ function MatchReport({ data }) {
         const penHome = homePens || r.penalty_home_score || 0;
         const penAway = awayPens || r.penalty_away_score || 0;
 
-        // المباراة اتحسمت بالترجيح؟
         if (hasPenalties && penHome !== penAway) {
           return penHome > penAway ? (
             <Badge color="emerald">فوز (ترجيح)</Badge>
@@ -913,7 +986,6 @@ function MatchReport({ data }) {
           );
         }
 
-        // النتيجة العادية
         if (Number(r.home_score) > Number(r.away_score))
           return <Badge color="emerald">فوز</Badge>;
         if (Number(r.home_score) < Number(r.away_score))
@@ -961,7 +1033,7 @@ function FinanceReport({ data }) {
     {
       key: "team",
       label: "الفريق",
-      accessor: (r) => r.players?.teams?.name || "-",
+      accessor: (r) => r.players?.teams?.name || "بدون فريق",
     },
     {
       key: "amount",
@@ -1067,7 +1139,7 @@ function SuspensionReport({ data }) {
     {
       key: "team",
       label: "الفريق",
-      accessor: (r) => r.players?.teams?.name || "-",
+      accessor: (r) => r.players?.teams?.name || "بدون فريق",
     },
     {
       key: "type",
@@ -1216,7 +1288,6 @@ function InjuryReport({ data }) {
   const recovered = data.filter((i) => i.status === "recovered").length;
   const severe = data.filter((i) => i.severity === "severe").length;
 
-  // إجمالي أيام الغياب
   const totalDaysOut = data.reduce((sum, inj) => {
     const start = new Date(inj.injury_date);
     const end = inj.actual_return_date
@@ -1235,7 +1306,7 @@ function InjuryReport({ data }) {
     {
       key: "team",
       label: "الفريق",
-      accessor: (r) => r.players?.teams?.name || "-",
+      accessor: (r) => r.players?.teams?.name || "بدون فريق",
     },
     {
       key: "type",
@@ -1344,6 +1415,400 @@ function InjuryReport({ data }) {
         columns={columns}
         data={data}
         exportFilename="injuries-report"
+      />
+    </>
+  );
+}
+
+// =========================================================
+// Assessments Report (جديد)
+// =========================================================
+function AssessmentsReport({ data, participants }) {
+  const total = data.length;
+  const active = data.filter((a) =>
+    ["active", "in_progress", "pending_approval"].includes(a.status),
+  ).length;
+  const approved = data.filter((a) => a.status === "approved").length;
+  const locked = data.filter((a) => a.status === "locked").length;
+
+  // ✅ إحصائيات القرارات
+  const accepted = participants.filter(
+    (p) => p.final_decision === "accepted",
+  ).length;
+  const rejected = participants.filter(
+    (p) => p.final_decision === "rejected",
+  ).length;
+  const pending = participants.filter(
+    (p) => p.final_decision === "pending",
+  ).length;
+  const secondChance = participants.filter(
+    (p) => p.admin_decision === "needs_second_chance",
+  ).length;
+  const added = participants.filter((p) => p.is_added_to_players).length;
+
+  // ✅ حساب فرق النسبة (للاستثماريين)
+  const withBoth = participants.filter(
+    (p) =>
+      p.suggested_player_type === "investment" &&
+      p.suggested_percentage &&
+      p.final_percentage,
+  );
+  const avgDiff =
+    withBoth.length > 0
+      ? (
+          withBoth.reduce(
+            (s, p) =>
+              s +
+              (Number(p.final_percentage) - Number(p.suggested_percentage)),
+            0,
+          ) / withBoth.length
+        ).toFixed(1)
+      : 0;
+
+  const columns = [
+    { key: "name", label: "الاسم" },
+    {
+      key: "birth_year",
+      label: "المواليد",
+      render: (r) => r.birth_year || "—",
+    },
+    {
+      key: "teams",
+      label: "الفريق",
+      render: (r) => r.teams?.name || "بدون فريق",
+    },
+    {
+      key: "start_date",
+      label: "البداية",
+      render: (r) => formatDateShort(r.start_date),
+    },
+    {
+      key: "end_date",
+      label: "النهاية",
+      render: (r) => (r.end_date ? formatDateShort(r.end_date) : "—"),
+    },
+    {
+      key: "status",
+      label: "الحالة",
+      render: (r) => (
+        <Badge color={getAssessmentStatusColor(r.status)} size="sm">
+          {getAssessmentStatusLabel(r.status)}
+        </Badge>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      {/* إحصائيات الاختبارات */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          icon={ClipboardList}
+          label="إجمالي الاختبارات"
+          value={formatNumber(total)}
+          color="blue"
+        />
+        <StatCard
+          icon={TrendingUp}
+          label="نشطة"
+          value={formatNumber(active)}
+          color="amber"
+        />
+        <StatCard
+          icon={CheckCircle}
+          label="معتمدة"
+          value={formatNumber(approved)}
+          color="emerald"
+        />
+        <StatCard
+          icon={Clock}
+          label="مقفولة"
+          value={formatNumber(locked)}
+          color="slate"
+        />
+      </div>
+
+      {/* إحصائيات القرارات */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <StatCard
+          icon={Users}
+          label="إجمالي المشاركين"
+          value={formatNumber(participants.length)}
+          color="slate"
+        />
+        <StatCard
+          icon={CheckCircle}
+          label="مقبول"
+          value={formatNumber(accepted)}
+          color="emerald"
+        />
+        <StatCard
+          icon={XCircle}
+          label="مرفوض"
+          value={formatNumber(rejected)}
+          color="red"
+        />
+        <StatCard
+          icon={Clock}
+          label="معلق"
+          value={formatNumber(pending)}
+          color="amber"
+        />
+        <StatCard
+          icon={Users}
+          label="أُضيفوا للاعبين"
+          value={formatNumber(added)}
+          color="blue"
+        />
+      </div>
+
+      {/* فرصة تانية + فرق النسبة */}
+      {(secondChance > 0 || withBoth.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {secondChance > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/40 text-blue-800 dark:text-blue-300 text-sm p-3 rounded-lg">
+              🔄 يوجد <strong>{secondChance}</strong> لاعب محتاج فرصة تانية
+            </div>
+          )}
+          {withBoth.length > 0 && (
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-sm p-3 rounded-lg">
+              📊 متوسط الفرق بين النسبة المقترحة والقرار النهائي:{" "}
+              <strong>
+                {avgDiff > 0 ? `+${avgDiff}` : avgDiff}%
+              </strong>
+              <span className="text-xs text-slate-500 dark:text-slate-400 mr-2">
+                ({withBoth.length} استثماري)
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <ReportTable
+        title="تقرير الاختبارات"
+        subtitle={`${total} اختبار • ${participants.length} مشارك`}
+        columns={columns}
+        data={data}
+        exportFilename="assessments-report"
+      />
+    </>
+  );
+}
+
+// =========================================================
+// Treasury Report
+// =========================================================
+function TreasuryReport({ data }) {
+  const totalIncome = data
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => s + Number(t.amount || 0), 0);
+  const totalExpense = data
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => s + Number(t.amount || 0), 0);
+  const balance = totalIncome - totalExpense;
+  const incomeCount = data.filter((t) => t.type === "income").length;
+  const expenseCount = data.filter((t) => t.type === "expense").length;
+
+  const columns = [
+    {
+      key: "transaction_date",
+      label: "التاريخ",
+      render: (r) => formatDateShort(r.transaction_date),
+    },
+    {
+      key: "type",
+      label: "النوع",
+      render: (r) => (
+        <Badge color={r.type === "income" ? "emerald" : "red"}>
+          {r.type === "income" ? "💰 إيراد" : "💸 مصروف"}
+        </Badge>
+      ),
+    },
+    { key: "category", label: "التصنيف" },
+    {
+      key: "description",
+      label: "الوصف",
+      render: (r) => r.description || "—",
+    },
+    {
+      key: "receipt_number",
+      label: "رقم الإيصال",
+      render: (r) => r.receipt_number || "—",
+    },
+    {
+      key: "amount",
+      label: "المبلغ",
+      render: (r) => (
+        <span
+          className={`font-bold ${
+            r.type === "income" ? "text-emerald-600" : "text-red-600"
+          }`}
+        >
+          {r.type === "income" ? "+" : "-"}
+          {formatCurrency(r.amount)}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <StatCard
+          icon={Wallet}
+          label="الرصيد"
+          value={formatCurrency(balance)}
+          color={balance >= 0 ? "emerald" : "red"}
+        />
+        <StatCard
+          icon={TrendingUp}
+          label="إجمالي الإيرادات"
+          value={formatCurrency(totalIncome)}
+          color="emerald"
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label="إجمالي المصروفات"
+          value={formatCurrency(totalExpense)}
+          color="red"
+        />
+        <StatCard
+          icon={FileText}
+          label="عدد الإيرادات"
+          value={formatNumber(incomeCount)}
+          color="blue"
+        />
+        <StatCard
+          icon={FileText}
+          label="عدد المصروفات"
+          value={formatNumber(expenseCount)}
+          color="amber"
+        />
+      </div>
+
+      <ReportTable
+        title="تقرير الخزينة"
+        subtitle={`${data.length} عملية`}
+        columns={columns}
+        data={data}
+        exportFilename="treasury-report"
+      />
+    </>
+  );
+}
+
+// =========================================================
+// Contracts Report
+// =========================================================
+function ContractsReport({ data }) {
+  const active = data.filter((c) => c.status === "active").length;
+  const expired = data.filter((c) => c.status === "expired").length;
+  const totalValue = data.reduce(
+    (s, c) => s + Number(c.total_amount || 0),
+    0,
+  );
+
+  const columns = [
+    {
+      key: "party_name",
+      label: "الطرف",
+    },
+    {
+      key: "contract_type",
+      label: "النوع",
+      render: (r) => {
+        const typeMap = {
+          player: "🏃 لاعب",
+          coach: "👨‍🏫 مدرب",
+          sponsor: "💼 رعاية",
+          sale: "📤 بيع",
+          loan: "🔄 إعارة",
+          service: "🛠️ خدمات",
+        };
+        return typeMap[r.contract_type] || r.contract_type;
+      },
+    },
+    {
+      key: "start_date",
+      label: "البداية",
+      render: (r) => formatDateShort(r.start_date),
+    },
+    {
+      key: "end_date",
+      label: "النهاية",
+      render: (r) => (r.end_date ? formatDateShort(r.end_date) : "—"),
+    },
+    {
+      key: "total_amount",
+      label: "القيمة",
+      render: (r) => (
+        <span className="font-bold">{formatCurrency(r.total_amount)}</span>
+      ),
+    },
+    {
+      key: "status",
+      label: "الحالة",
+      render: (r) => (
+        <Badge
+          color={
+            r.status === "active"
+              ? "emerald"
+              : r.status === "expiring"
+                ? "amber"
+                : r.status === "expired"
+                  ? "slate"
+                  : "red"
+          }
+        >
+          {r.status === "active"
+            ? "نشط"
+            : r.status === "expiring"
+              ? "ينتهي قريب"
+              : r.status === "expired"
+                ? "منتهي"
+                : r.status === "cancelled"
+                  ? "ملغي"
+                  : "مجدد"}
+        </Badge>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          icon={FileText}
+          label="إجمالي العقود"
+          value={formatNumber(data.length)}
+          color="blue"
+        />
+        <StatCard
+          icon={Trophy}
+          label="عقود نشطة"
+          value={formatNumber(active)}
+          color="emerald"
+        />
+        <StatCard
+          icon={Calendar}
+          label="عقود منتهية"
+          value={formatNumber(expired)}
+          color="slate"
+        />
+        <StatCard
+          icon={DollarSign}
+          label="القيمة الإجمالية"
+          value={formatCurrency(totalValue)}
+          color="amber"
+        />
+      </div>
+
+      <ReportTable
+        title="تقرير العقود"
+        subtitle={`${data.length} عقد`}
+        columns={columns}
+        data={data}
+        exportFilename="contracts-report"
       />
     </>
   );

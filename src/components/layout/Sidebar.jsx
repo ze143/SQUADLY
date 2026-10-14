@@ -13,7 +13,6 @@ import {
   Trophy,
   X,
   Layers,
-  Bell,
   Search as SearchIcon,
   ArrowLeftRight,
   Dumbbell,
@@ -24,6 +23,7 @@ import {
   Wallet,
   Settings,
   FileText,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { isAdmin as checkIsAdmin } from "../../utils/permissions";
@@ -66,6 +66,20 @@ const SECTIONS = [
     adminOnly: false,
   },
   {
+    id: "assessments",
+    label: "الاختبارات",
+    icon: ClipboardList,
+    items: [
+      { to: "/assessments", label: "الاختبارات", icon: ClipboardList },
+      {
+        to: "/assessments/reports",
+        label: "تقارير الاختبارات",
+        icon: BarChart3,
+      },
+    ],
+    adminOnly: false,
+  },
+  {
     id: "finance",
     label: "المالية والتقارير",
     icon: Wallet,
@@ -85,7 +99,7 @@ const SECTIONS = [
       { to: "/contracts", label: "العقود", icon: FileText },
       { to: "/contracts/reports", label: "تقارير العقود", icon: BarChart3 },
     ],
-    adminOnly: true, // 
+    adminOnly: true,
   },
   {
     id: "admin",
@@ -112,7 +126,6 @@ export default function Sidebar({ onClose, isMobile = false }) {
     }
   };
 
-  // الفلترة حسب الصلاحيات
   const visibleSections = SECTIONS.filter((s) => !s.adminOnly || admin);
 
   return (
@@ -152,13 +165,12 @@ export default function Sidebar({ onClose, isMobile = false }) {
         <SectorSwitcher />
       </div>
 
-      {/* Navigation (scrollable) */}
+      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 pb-2 space-y-4">
         {visibleSections.map((section) => {
           const SectionIcon = section.icon;
           return (
             <div key={section.id}>
-              {/* Section Header */}
               <div className="flex items-center gap-2 px-2 mb-1.5">
                 <SectionIcon size={12} className="text-slate-500" />
                 <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
@@ -166,7 +178,6 @@ export default function Sidebar({ onClose, isMobile = false }) {
                 </span>
               </div>
 
-              {/* Section Items */}
               <div className="space-y-0.5">
                 {section.items.map(({ to, label, icon: Icon }) => (
                   <NavLink
