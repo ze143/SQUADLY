@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Save, X, AlertCircle } from 'lucide-react';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import Select from '../ui/Select';
+import { useEffect, useState } from "react";
+import { Save, X, AlertCircle } from "lucide-react";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Select from "../ui/Select";
 import {
-  INJURY_TYPES, INJURY_SEVERITY, BODY_PARTS,
-  INJURY_CAUSES, INJURY_STATUS,
-} from '../../utils/constants';
+  INJURY_TYPES,
+  INJURY_SEVERITY,
+  BODY_PARTS,
+  INJURY_CAUSES,
+  INJURY_STATUS,
+} from "../../utils/constants";
 
 export default function InjuryForm({
   injury = null,
@@ -19,51 +22,60 @@ export default function InjuryForm({
   const isEdit = Boolean(injury);
 
   const [form, setForm] = useState({
-    player_id: injury?.player_id || player?.id || '',
-    injury_type: injury?.injury_type || 'muscle',
-    severity: injury?.severity || 'minor',
-    body_part: injury?.body_part || '',
-    cause: injury?.cause || 'training',
-    injury_date:
-      injury?.injury_date || new Date().toISOString().split('T')[0],
-    expected_return_date: injury?.expected_return_date || '',
-    actual_return_date: injury?.actual_return_date || '',
-    description: injury?.description || '',
-    treatment: injury?.treatment || '',
-    doctor_name: injury?.doctor_name || '',
-    status: injury?.status || 'active',
-    notes: injury?.notes || '',
+    player_id: injury?.player_id || player?.id || "",
+    injury_type: injury?.injury_type || "muscle",
+    severity: injury?.severity || "minor",
+    body_part: injury?.body_part || "",
+    cause: injury?.cause || "training",
+    injury_date: injury?.injury_date || new Date().toISOString().split("T")[0],
+    expected_return_date: injury?.expected_return_date || "",
+    actual_return_date: injury?.actual_return_date || "",
+    description: injury?.description || "",
+    treatment: injury?.treatment || "",
+    doctor_name: injury?.doctor_name || "",
+    status: injury?.status || "active",
+    notes: injury?.notes || "",
   });
 
   useEffect(() => {
     if (injury) {
       setForm({
-        player_id: injury.player_id || '',
-        injury_type: injury.injury_type || 'muscle',
-        severity: injury.severity || 'minor',
-        body_part: injury.body_part || '',
-        cause: injury.cause || 'training',
-        injury_date: injury.injury_date || '',
-        expected_return_date: injury.expected_return_date || '',
-        actual_return_date: injury.actual_return_date || '',
-        description: injury.description || '',
-        treatment: injury.treatment || '',
-        doctor_name: injury.doctor_name || '',
-        status: injury.status || 'active',
-        notes: injury.notes || '',
+        player_id: injury.player_id || "",
+        injury_type: injury.injury_type || "muscle",
+        severity: injury.severity || "minor",
+        body_part: injury.body_part || "",
+        cause: injury.cause || "training",
+        injury_date: injury.injury_date || "",
+        expected_return_date: injury.expected_return_date || "",
+        actual_return_date: injury.actual_return_date || "",
+        description: injury.description || "",
+        treatment: injury.treatment || "",
+        doctor_name: injury.doctor_name || "",
+        status: injury.status || "active",
+        notes: injury.notes || "",
       });
     }
   }, [injury]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.player_id) return alert('يرجى اختيار اللاعب');
-    if (!form.injury_date) return alert('يرجى إدخال تاريخ الإصابة');
+    if (!form.player_id) return alert("يرجى اختيار اللاعب");
+    if (!form.injury_date) return alert("يرجى إدخال تاريخ الإصابة");
+
+    // ✅ body_part إلزامي لأن CHECK constraint مش بيسمح بـ null
+    if (!form.body_part) {
+      return alert("يرجى اختيار الجزء المصاب");
+    }
 
     onSubmit({
       ...form,
+      body_part: form.body_part, // ← إلزامي
       expected_return_date: form.expected_return_date || null,
       actual_return_date: form.actual_return_date || null,
+      description: form.description || null,
+      treatment: form.treatment || null,
+      doctor_name: form.doctor_name || null,
+      notes: form.notes || null,
     });
   };
 
@@ -96,7 +108,7 @@ export default function InjuryForm({
             <option value="">-- اختر اللاعب --</option>
             {players.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.full_name} {p.teams?.name ? `- ${p.teams.name}` : ''}
+                {p.full_name} {p.teams?.name ? `- ${p.teams.name}` : ""}
               </option>
             ))}
           </select>
@@ -125,6 +137,7 @@ export default function InjuryForm({
 
         <Select
           label="الجزء المصاب"
+          required // 👈 ضيف دي
           placeholder="-- اختر --"
           options={BODY_PARTS}
           value={form.body_part}
@@ -218,11 +231,30 @@ export default function InjuryForm({
         />
       </div>
 
-      {form.severity === 'severe' && (
+      {/* ⚠️ تحذير إصابة شديدة */}
+      {form.severity === "severe" && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 text-sm p-3 rounded-lg flex items-start gap-2">
           <AlertCircle size={16} className="shrink-0 mt-0.5" />
           <div>
             <strong>إصابة شديدة.</strong> تأكد من مراجعة الطبيب المختص.
+            <br />
+            <span className="text-xs">
+              ⚠️ سيتم إلغاء تنشيط اللاعب تلقائيًا حتى يتعافى.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ⚠️ تحذير إصابة متوسطة */}
+      {form.severity === "moderate" && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 text-sm p-3 rounded-lg flex items-start gap-2">
+          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          <div>
+            <strong>إصابة متوسطة.</strong>
+            <br />
+            <span className="text-xs">
+              ⚠️ سيتم إلغاء تنشيط اللاعب تلقائيًا حتى يتعافى.
+            </span>
           </div>
         </div>
       )}
@@ -239,7 +271,7 @@ export default function InjuryForm({
           </Button>
         )}
         <Button type="submit" loading={saving}>
-          <Save size={16} /> {isEdit ? 'تحديث' : 'حفظ'}
+          <Save size={16} /> {isEdit ? "تحديث" : "حفظ"}
         </Button>
       </div>
     </form>

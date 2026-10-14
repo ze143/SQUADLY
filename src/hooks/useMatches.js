@@ -120,6 +120,7 @@ export function useMatches(options = {}) {
       refereesRes,
       escalatedRes,
       suspensionsRes,
+      injuriesRes,
     ] = await Promise.all([
       supabase
         .from("matches")
@@ -158,6 +159,12 @@ export function useMatches(options = {}) {
         .from("suspensions")
         .select("player_id, matches_suspended, matches_served, reason, type")
         .eq("status", "active"),
+      // ✅ إصابات: بنجيب كل الإصابات (حتى المتعافي منها) عشان نحسبها بتاريخ المباراة
+      supabase
+        .from("injuries")
+        .select(
+          "player_id, injury_type, severity, injury_date, expected_return_date, actual_return_date, status",
+        ),
     ]);
 
     if (matchRes.error) throw matchRes.error;
@@ -169,6 +176,7 @@ export function useMatches(options = {}) {
       referees: refereesRes.data || [],
       escalatedPlayers: escalatedRes.data || [],
       activeSuspensions: suspensionsRes.data || [],
+      activeInjuries: injuriesRes.data || [],
     };
   }, []);
 
@@ -177,6 +185,45 @@ export function useMatches(options = {}) {
     if (substitutes.length !== 9)
       throw new Error("يجب اختيار 9 لاعبين احتياطيين");
 
+    const allIds = [...starters, ...substitutes];
+
+    // ✅ تحقق من الإصابات النشطة
+    const { data: injured, error: injErr } = await supabase
+      .from("injuries")
+      .select("player_id, players(full_name)")
+      .eq("status", "active")
+      .in("player_id", allIds);
+
+    if (injErr) throw injErr;
+    if (injured?.length > 0) {
+      const names = injured
+        .map((i) => i.players?.full_name)
+        .filter(Boolean)
+        .join("، ");
+      throw new Error(
+        `🏥 يوجد ${injured.length} لاعب مصاب في التشكيل: ${names}\nلازم تشيلهم الأول.`,
+      );
+    }
+
+    // ✅ تحقق من الإيقافات النشطة
+    const { data: suspended, error: susErr } = await supabase
+      .from("suspensions")
+      .select("player_id, players(full_name)")
+      .eq("status", "active")
+      .in("player_id", allIds);
+
+    if (susErr) throw susErr;
+    if (suspended?.length > 0) {
+      const names = suspended
+        .map((s) => s.players?.full_name)
+        .filter(Boolean)
+        .join("، ");
+      throw new Error(
+        `🚫 يوجد ${suspended.length} لاعب موقوف في التشكيل: ${names}\nلازم تشيلهم الأول.`,
+      );
+    }
+
+    // ✅ حذف التشكيل القديم وإضافة الجديد
     await supabase.from("match_lineups").delete().eq("match_id", matchId);
 
     const records = [

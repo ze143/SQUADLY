@@ -376,6 +376,7 @@ export default function Meetings() {
             event={editing}
             teams={teams}
             defaultType="meeting"
+            allowedTypes={["meeting" , "other"]}
             onSubmit={handleSubmit}
             onCancel={() => {
               setShowForm(false);

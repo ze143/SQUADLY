@@ -11,6 +11,7 @@ import {
   Users,
   Flag,
   Star,
+  Target,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -29,7 +30,6 @@ import MatchRatings from "../components/matches/MatchRatings";
 import { formatDateTime } from "../utils/formatters";
 import { getVenueTypeLabel, getVenueTypeColor } from "../utils/constants";
 import MatchPenalties from "../components/matches/MatchPenalties";
-import { Target } from "lucide-react";
 
 const TABS = [
   { id: "info", label: "معلومات المباراة", icon: Trophy },
@@ -78,24 +78,7 @@ export default function MatchDetails() {
         away_score: data.match.away_score ?? 0,
       });
 
-      // ✅ الموقوفين
-      const suspendedIds = new Set(
-        (data.activeSuspensions || []).map((s) => s.player_id),
-      );
-      setSuspendedPlayers(Array.from(suspendedIds));
-
-      const injuredIds = new Set(
-        (data.activeInjuries || []).map((i) => i.player_id),
-      );
-      setInjuredPlayers(Array.from(injuredIds));
-
-      // ✅ جلب التقييمات
-      const { data: ratingsData } = await supabase
-        .from("match_ratings")
-        .select("*")
-        .eq("match_id", id);
-      setRatings(ratingsData || []);
-
+      // ✅ هنجهز قائمة اللاعبين الأول، وبعدين نفلتر الإيقافات والإصابات
       if (data.match?.team_id) {
         // 1) لاعبي الفريق الأساسي
         const { data: teamPlayers } = await supabase
@@ -125,8 +108,54 @@ export default function MatchDetails() {
           }
         });
 
-        // ✅ استبعد الموقوفين من القائمة
-        // ✅ علّم الموقوفين بدل ما نستبعدهم
+        // ✅ 4) دلوقتي نفلتر الإيقافات والإصابات على لاعييين الفريق بس
+        const teamPlayerIds = new Set(combined.map((p) => p.id));
+
+        const suspendedIds = new Set(
+          (data.activeSuspensions || [])
+            .filter((s) => teamPlayerIds.has(s.player_id))
+            .map((s) => s.player_id),
+        );
+        setSuspendedPlayers(Array.from(suspendedIds));
+
+        // ✅ الإصابات: نحسبها بتاريخ المباراة (زي الإيقافات)
+        const matchDate = new Date(data.match.match_date);
+        matchDate.setHours(0, 0, 0, 0);
+
+        const injuredIds = new Set(
+          (data.activeInjuries || [])
+            .filter((i) => {
+              // لازم يكون من لاعييين الفريق
+              if (!teamPlayerIds.has(i.player_id)) return false;
+
+              const injuryDate = new Date(i.injury_date);
+              injuryDate.setHours(0, 0, 0, 0);
+
+              // لو الإصابة حصلت بعد المباراة → اللاعب كان سليم وقتها
+              if (injuryDate > matchDate) return false;
+
+              // لو اللاعب رجع فعلاً (actual_return_date) قبل المباراة → كان سليم
+              if (i.actual_return_date) {
+                const actualReturn = new Date(i.actual_return_date);
+                actualReturn.setHours(0, 0, 0, 0);
+                if (actualReturn <= matchDate) return false;
+              }
+
+              // لو التاريخ المتوقع للعودة عدّى قبل المباراة → مفروض كان رجع
+              if (i.expected_return_date) {
+                const expectedReturn = new Date(i.expected_return_date);
+                expectedReturn.setHours(0, 0, 0, 0);
+                if (expectedReturn < matchDate) return false;
+              }
+
+              // لسه مصاب وقت المباراة
+              return true;
+            })
+            .map((i) => i.player_id),
+        );
+        setInjuredPlayers(Array.from(injuredIds));
+
+        // 5) علّم اللاعبين بحالتهم
         const playersWithStatus = combined.map((p) => ({
           ...p,
           _suspended: suspendedIds.has(p.id),
@@ -135,6 +164,13 @@ export default function MatchDetails() {
         }));
         setPlayers(playersWithStatus);
       }
+
+      // ✅ جلب التقييمات
+      const { data: ratingsData } = await supabase
+        .from("match_ratings")
+        .select("*")
+        .eq("match_id", id);
+      setRatings(ratingsData || []);
     } catch (err) {
       console.error(err);
       alert("خطأ في تحميل تفاصيل المباراة: " + err.message);
@@ -264,22 +300,18 @@ export default function MatchDetails() {
 
   // ✅ استخراج المشاركين (الأساسيين + الاحتياطيين اللي دخلوا)
   const getParticipants = () => {
-    // 1) الأساسيين
     const starterIds = lineup
       .filter((l) => l.lineup_type === "starter")
       .map((l) => l.player_id);
 
-    // 2) اللي دخلوا
     const subInIds = events
       .filter((e) => e.event_type === "substitution_in")
       .map((e) => e.player_id);
 
-    // 3) اللي خرجوا
     const subOutIds = events
       .filter((e) => e.event_type === "substitution_out")
       .map((e) => e.player_id);
 
-    // 4) المشاركون (أساسيين + اللي دخلوا)
     const allIds = [...new Set([...starterIds, ...subInIds])];
 
     return players
@@ -394,7 +426,7 @@ export default function MatchDetails() {
       )}
 
       {suspendedPlayers.length > 0 && (
-        <div className="bg-red-50 border border-red-200 text-red-800 text-s p-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-800 text-sm p-3 rounded-lg">
           🚫 يوجد <strong>{suspendedPlayers.length}</strong> لاعب موقوف. لا يمكن
           إضافتهم للتشكيل حتى يتم رفع الإيقاف.
         </div>
@@ -490,7 +522,7 @@ export default function MatchDetails() {
         />
       )}
 
-      {/* ✅ Ratings Tab */}
+      {/* Ratings Tab */}
       {tab === "ratings" && (
         <MatchRatings
           participants={getParticipants()}
@@ -500,6 +532,7 @@ export default function MatchDetails() {
         />
       )}
 
+      {/* Penalties Tab */}
       {tab === "penalties" && (
         <MatchPenalties
           match={match}
@@ -510,6 +543,7 @@ export default function MatchDetails() {
           onRefresh={loadAll}
         />
       )}
+
       {/* Referees Tab */}
       {tab === "referees" && (
         <MatchReferees

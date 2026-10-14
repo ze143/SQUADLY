@@ -1,67 +1,76 @@
-import { useEffect, useState } from 'react';
-import { Save, X } from 'lucide-react';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import Select from '../ui/Select';
+import { useEffect, useState } from "react";
+import { Save, X } from "lucide-react";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Select from "../ui/Select";
 import {
-  EVENT_CATEGORIES, MEETING_TYPES, ATTENDEES_TYPES,
-  TRAINING_TYPES, EVENT_STATUS,
-} from '../../utils/constants';
+  EVENT_CATEGORIES,
+  MEETING_TYPES,
+  ATTENDEES_TYPES,
+  TRAINING_TYPES,
+  EVENT_STATUS,
+} from "../../utils/constants";
 
 export default function EventForm({
   event = null,
   teams = [],
-  defaultType = 'training',
+  defaultType = "training",
+  allowedTypes = null, // ✅ جديد: لو محدد، نعرض الأنواع دي بس
   onSubmit,
   onCancel,
   saving = false,
 }) {
   const isEdit = Boolean(event);
 
+  // ✅ فلترة الأنواع المسموحة
+  const visibleCategories = allowedTypes
+    ? EVENT_CATEGORIES.filter((c) => allowedTypes.includes(c.value))
+    : EVENT_CATEGORIES;
+
   const [form, setForm] = useState({
-    team_id: event?.team_id || '',
+    team_id: event?.team_id || "",
     event_type: event?.event_type || defaultType,
-    title: event?.title || '',
-    event_date: event?.event_date || new Date().toISOString().split('T')[0],
-    start_time: event?.start_time || '17:00',
+    title: event?.title || "",
+    event_date: event?.event_date || new Date().toISOString().split("T")[0],
+    start_time: event?.start_time || "17:00",
     duration_minutes: event?.duration_minutes || 90,
-    location: event?.location || '',
-    training_type: event?.training_type || 'tactical',
-    meeting_type: event?.meeting_type || 'administrative',
-    attendees_type: event?.attendees_type || 'team',
-    agenda: event?.agenda || '',
-    notes: event?.notes || '',
-    minutes: event?.minutes || '',
-    decisions: event?.decisions || '',
-    status: event?.status || 'scheduled',
+    location: event?.location || "",
+    training_type: event?.training_type || "tactical",
+    meeting_type: event?.meeting_type || "administrative",
+    attendees_type: event?.attendees_type || "team",
+    agenda: event?.agenda || "",
+    notes: event?.notes || "",
+    minutes: event?.minutes || "",
+    decisions: event?.decisions || "",
+    status: event?.status || "scheduled",
   });
 
   useEffect(() => {
     if (event) {
       setForm({
-        team_id: event.team_id || '',
-        event_type: event.event_type || 'training',
-        title: event.title || '',
-        event_date: event.event_date || '',
-        start_time: event.start_time || '17:00',
+        team_id: event.team_id || "",
+        event_type: event.event_type || "training",
+        title: event.title || "",
+        event_date: event.event_date || "",
+        start_time: event.start_time || "17:00",
         duration_minutes: event.duration_minutes || 90,
-        location: event.location || '',
-        training_type: event.training_type || 'tactical',
-        meeting_type: event.meeting_type || 'administrative',
-        attendees_type: event.attendees_type || 'team',
-        agenda: event.agenda || '',
-        notes: event.notes || '',
-        minutes: event.minutes || '',
-        decisions: event.decisions || '',
-        status: event.status || 'scheduled',
+        location: event.location || "",
+        training_type: event.training_type || "tactical",
+        meeting_type: event.meeting_type || "administrative",
+        attendees_type: event.attendees_type || "team",
+        agenda: event.agenda || "",
+        notes: event.notes || "",
+        minutes: event.minutes || "",
+        decisions: event.decisions || "",
+        status: event.status || "scheduled",
       });
     }
   }, [event]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.team_id) return alert('يرجى اختيار الفريق');
-    if (!form.event_date) return alert('يرجى اختيار التاريخ');
+    if (!form.team_id) return alert("يرجى اختيار الفريق");
+    if (!form.event_date) return alert("يرجى اختيار التاريخ");
 
     const payload = {
       ...form,
@@ -69,11 +78,10 @@ export default function EventForm({
       start_time: form.start_time || null,
     };
 
-    // شيل الحقول مش المناسبة
-    if (form.event_type !== 'training' && form.event_type !== 'friendly') {
+    if (form.event_type !== "training" && form.event_type !== "friendly") {
       payload.training_type = null;
     }
-    if (form.event_type !== 'meeting') {
+    if (form.event_type !== "meeting") {
       payload.meeting_type = null;
       payload.agenda = null;
       payload.minutes = null;
@@ -83,18 +91,25 @@ export default function EventForm({
     onSubmit(payload);
   };
 
-  const isMeeting = form.event_type === 'meeting';
-  const isTraining = form.event_type === 'training' || form.event_type === 'friendly';
+  const isMeeting = form.event_type === "meeting";
+  const isTraining =
+    form.event_type === "training" || form.event_type === "friendly";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" dir="rtl">
+    <form onSubmit={handleSubmit} className="w-full space-y-4" dir="rtl">
       {/* نوع الحدث */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
           نوع الحدث <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {EVENT_CATEGORIES.map((c) => {
+        <div
+          className={`grid w-full ${
+            visibleCategories.length === 1
+              ? "grid-cols-1 gap-3"
+              : "grid-cols-3 gap-3"
+          }`}
+        >
+          {visibleCategories.map((c) => {
             const selected = form.event_type === c.value;
             return (
               <button
@@ -103,16 +118,16 @@ export default function EventForm({
                 onClick={() => setForm({ ...form, event_type: c.value })}
                 className={`p-3 rounded-lg border-2 transition text-center ${
                   selected
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30"
+                    : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                 }`}
               >
                 <div className="text-2xl mb-1">{c.icon}</div>
                 <p
                   className={`text-xs font-medium ${
                     selected
-                      ? 'text-emerald-700 dark:text-emerald-300'
-                      : 'text-slate-700 dark:text-slate-300'
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : "text-slate-700 dark:text-slate-300"
                   }`}
                 >
                   {c.label}
@@ -123,7 +138,7 @@ export default function EventForm({
         </div>
       </div>
 
-      {/* الفريق (مش بيظهر في التعديل) */}
+      {/* الفريق */}
       {!isEdit && (
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
@@ -148,15 +163,23 @@ export default function EventForm({
       <Input
         label="العنوان (اختياري)"
         placeholder={
-          isMeeting
-            ? 'مثال: اجتماع إداري قبل المباراة'
-            : 'مثال: تدريب تكتيكي'
+          isMeeting ? "مثال: اجتماع إداري قبل المباراة" : "مثال: تدريب تكتيكي"
         }
         value={form.title}
         onChange={(e) => setForm({ ...form, title: e.target.value })}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div
+        className={`grid gap-2 w-full ${
+          visibleCategories.length === 1
+            ? "grid-cols-1"
+            : visibleCategories.length === 2
+              ? "grid-cols-1 sm:grid-cols-2"
+              : visibleCategories.length === 3
+                ? "grid-cols-1 sm:grid-cols-3"
+                : "grid-cols-2 md:grid-cols-4"
+        }`}
+      >
         <Input
           type="date"
           label="التاريخ"
@@ -185,12 +208,11 @@ export default function EventForm({
 
         <Input
           label="المكان"
-          placeholder={isMeeting ? 'قاعة الاجتماعات' : 'ملعب النادي'}
+          placeholder={isMeeting ? "قاعة الاجتماعات" : "ملعب النادي"}
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
         />
 
-        {/* نوع التدريب */}
         {isTraining && (
           <Select
             label="نوع التدريب"
@@ -202,7 +224,6 @@ export default function EventForm({
           />
         )}
 
-        {/* نوع الاجتماع */}
         {isMeeting && (
           <>
             <Select
@@ -232,7 +253,6 @@ export default function EventForm({
         />
       </div>
 
-      {/* Agenda (للاجتماعات) */}
       {isMeeting && (
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
@@ -261,7 +281,6 @@ export default function EventForm({
         />
       </div>
 
-      {/* محضر الاجتماع (للاجتماعات) */}
       {isMeeting && (
         <>
           <div>
@@ -304,7 +323,7 @@ export default function EventForm({
           </Button>
         )}
         <Button type="submit" loading={saving}>
-          <Save size={16} /> {isEdit ? 'تحديث' : 'حفظ'}
+          <Save size={16} /> {isEdit ? "تحديث" : "حفظ"}
         </Button>
       </div>
     </form>

@@ -35,6 +35,9 @@ export default function MatchLineup({
     if (player?._suspended) {
       return alert("هذا اللاعب موقوف. لا يمكن إضافته للتشكيل.");
     }
+    if (player?._injured) {
+      return alert("🏥 هذا اللاعب مصاب. لا يمكن إضافته للتشكيل حتى يتعافى.");
+    }
     if (player?._inactive) {
       return alert("هذا اللاعب غير نشط. لا يمكن إضافته للتشكيل.");
     }
@@ -55,6 +58,9 @@ export default function MatchLineup({
     const player = players.find((p) => p.id === playerId);
     if (player?._suspended) {
       return alert("هذا اللاعب موقوف. لا يمكن إضافته للتشكيل.");
+    }
+    if (player?._injured) {
+      return alert("🏥 هذا اللاعب مصاب. لا يمكن إضافته للتشكيل حتى يتعافى.");
     }
     if (player?._inactive) {
       return alert("هذا اللاعب غير نشط. لا يمكن إضافته للتشكيل.");
@@ -107,8 +113,13 @@ export default function MatchLineup({
               const isSub = substitutes.includes(p.id);
               const isSuspended = p._suspended;
               const isInactive = p._inactive;
+              const isInjured = p._injured;
               const isDisabled =
-                disabled || (isSub && !isStarter) || isSuspended || isInactive;
+                disabled ||
+                (isSub && !isStarter) ||
+                isSuspended ||
+                isInactive ||
+                isInjured;
 
               return (
                 <button
@@ -122,9 +133,11 @@ export default function MatchLineup({
                       ? "bg-emerald-50 border border-emerald-300"
                       : isSuspended
                         ? "bg-red-50 border border-red-200"
-                        : isInactive
-                          ? "bg-slate-100 border border-slate-300"
-                          : "hover:bg-slate-50 border border-transparent",
+                        : isInjured
+                          ? "bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-700/60"
+                          : isInactive
+                            ? "bg-slate-100 border border-slate-300"
+                            : "hover:bg-slate-50 border border-transparent",
                     isDisabled
                       ? "opacity-60 cursor-not-allowed"
                       : "cursor-pointer",
@@ -144,18 +157,18 @@ export default function MatchLineup({
                       </span>
                     )}
                     {isSuspended && (
-                      <span className="text-s bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                         🚫 موقوف
+                      </span>
+                    )}
+                    {isInjured && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">
+                        🏥 مصاب
                       </span>
                     )}
                     {isInactive && (
                       <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">
                         ⏸️ غير نشط
-                      </span>
-                    )}
-                    {p._injured && (
-                      <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">
-                        🏥 مصاب
                       </span>
                     )}
                   </span>
@@ -186,8 +199,13 @@ export default function MatchLineup({
               const isSub = substitutes.includes(p.id);
               const isSuspended = p._suspended;
               const isInactive = p._inactive;
+              const isInjured = p._injured;
               const isDisabled =
-                disabled || (isStarter && !isSub) || isSuspended || isInactive;
+                disabled ||
+                (isStarter && !isSub) ||
+                isSuspended ||
+                isInactive ||
+                isInjured;
 
               return (
                 <button
@@ -201,9 +219,11 @@ export default function MatchLineup({
                       ? "bg-amber-50 border border-amber-300"
                       : isSuspended
                         ? "bg-red-50 border border-red-200"
-                        : isInactive
-                          ? "bg-slate-100 border border-slate-300"
-                          : "hover:bg-slate-50 border border-transparent",
+                        : isInjured
+                          ? "bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-700/60"
+                          : isInactive
+                            ? "bg-slate-100 border border-slate-300"
+                            : "hover:bg-slate-50 border border-transparent",
                     isDisabled
                       ? "opacity-60 cursor-not-allowed"
                       : "cursor-pointer",
@@ -223,8 +243,13 @@ export default function MatchLineup({
                       </span>
                     )}
                     {isSuspended && (
-                      <span className="text-s bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                         🚫 موقوف
+                      </span>
+                    )}
+                    {isInjured && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">
+                        🏥 مصاب
                       </span>
                     )}
                     {isInactive && (

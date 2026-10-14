@@ -389,6 +389,7 @@ export default function Training() {
             event={editing}
             teams={teams}
             defaultType="training"
+            allowedTypes={["training", "friendly" , "other"]} 
             onSubmit={handleSubmit}
             onCancel={() => {
               setShowForm(false);
